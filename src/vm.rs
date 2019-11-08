@@ -97,6 +97,20 @@ impl VM {
                 let reg2 = self.registers[self.next_byte() as usize];
                 self.registers[reg1] = reg2 as i32;
             },
+            Opcode::JMP => {
+                let target = self.registers[self.next_byte() as usize];
+                self.pc = target as usize;
+            },
+            Opcode::JMPB => {
+                let value = self.registers[self.next_byte() as usize];
+                self.pc -= value as usize;                
+            },
+
+            Opcode::JMPF => {
+                let value = self.registers[self.next_byte() as usize];
+                self.pc += value as usize;
+            },
+
             Opcode::IGL => {
                 println!("Illegal instruction");
                 return false;
@@ -147,7 +161,7 @@ mod tests {
     fn test_opcode_load() {
         let mut test_vm = VM::new();
         // [1,244] is 0x1f4 in little endian, which is 500
-        let test_bytes = vec![1,0,1,244];
+        let test_bytes = vec![1,0,1,244]; // LOAD $0 0x1f4
         test_vm.program = test_bytes;
         test_vm.run();
         assert_eq!(test_vm.registers[0], 500);
@@ -156,7 +170,7 @@ mod tests {
     #[test]
     fn test_opcode_add() {
         let mut test_vm = get_test_vm();
-        let test_bytes = vec![2, 0, 1, 2];
+        let test_bytes = vec![2, 0, 1, 2]; // ADD $0 $1 $2
         test_vm.program = test_bytes;
         test_vm.run();
         assert_eq!(test_vm.registers[2], 0x1e);
@@ -165,7 +179,7 @@ mod tests {
     #[test]
     fn test_opcode_sub() {
         let mut test_vm = get_test_vm();
-        let test_bytes = vec![3, 1, 0, 2];
+        let test_bytes = vec![3, 1, 0, 2]; // SUB $1 $0 $2
         test_vm.program = test_bytes;
         test_vm.run();
         assert_eq!(test_vm.registers[2], 0x0a);
@@ -174,7 +188,7 @@ mod tests {
     #[test]
     fn test_opcode_mul() {
         let mut test_vm = get_test_vm();
-        let test_bytes = vec![4, 0, 1, 2];
+        let test_bytes = vec![4, 0, 1, 2]; // MUL $0 $1 $2
         test_vm.program = test_bytes;
         test_vm.run();
         assert_eq!(test_vm.registers[2], 0xc8);
@@ -183,7 +197,7 @@ mod tests {
     #[test]
     fn test_opcode_div_without_remainder() {
         let mut test_vm = get_test_vm();
-        let test_bytes = vec![5, 1, 0, 2];
+        let test_bytes = vec![5, 1, 0, 2]; // DIV $1 $0 $2
         test_vm.program = test_bytes;
         test_vm.run();
         assert_eq!(test_vm.registers[2], 0x2);
@@ -192,7 +206,7 @@ mod tests {
     #[test]
     fn test_opcode_div_with_remainder() {
         let mut test_vm = get_test_vm();
-        let test_bytes = vec![5, 0, 1, 2];
+        let test_bytes = vec![5, 0, 1, 2]; // DIV $0 $1 $2
         test_vm.program = test_bytes;
         test_vm.run();
         assert_eq!(test_vm.registers[2], 0);
@@ -202,7 +216,7 @@ mod tests {
     #[test]
     fn test_opcode_mov() {
         let mut test_vm = get_test_vm();
-        let test_bytes = vec![6, 0, 1];
+        let test_bytes = vec![6, 0, 1, 0]; // MOV $0 $1
         println!("{} {}", test_vm.registers[0], test_vm.registers[1]);
         test_vm.program = test_bytes;
         test_vm.run();
@@ -210,4 +224,35 @@ mod tests {
         assert_eq!(test_vm.registers[0], 0x14);
         assert_eq!(test_vm.registers[1], 0x14);
     }
+
+    #[test]
+    fn test_opcode_jmp() {
+        let mut test_vm = get_test_vm();
+        let test_bytes = vec![7,0,0,0]; // JMP $0
+        test_vm.program = test_bytes;
+        test_vm.pc = 0;
+        test_vm.run_once();
+        assert_eq!(test_vm.pc, 10);
+    }
+
+    #[test]
+    fn test_opcode_jmpb() {
+        let mut test_vm = get_test_vm();
+        let test_bytes = vec![0,0,0,0,0,0,0,0,0,0,0,0,8,0,0,0]; // JMPB $0
+        test_vm.program = test_bytes;
+        test_vm.pc = 12;
+        test_vm.run_once();
+        assert_eq!(test_vm.pc, 4); // pc gets incremented by 2 before the JMPB
+    }
+
+    #[test]    
+    fn test_opcode_jmpf() {
+        let mut test_vm = get_test_vm();
+        let test_bytes = vec![9,0,0,0]; // JMPB $0
+        test_vm.program = test_bytes;
+        test_vm.run_once();
+        assert_eq!(test_vm.pc, 12); // pc gets incremented by 2 before the JMPF
+    }
+
+
 }
