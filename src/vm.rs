@@ -1,9 +1,9 @@
 use crate::instruction::Opcode;
 
 pub struct VM {
-    registers: [i32; 32],
+    pub registers: [i32; 32],
     pc: usize,
-    program: Vec<u8>,
+    pub program: Vec<u8>,
     remainder: u32,
 }
 
@@ -22,6 +22,10 @@ impl VM {
         let opcode = Opcode::from(self.program[self.pc]);
         self.pc += 1;
         return opcode;
+    }
+
+    pub fn add_byte(&mut self, byte: u8) {
+        self.program.push(byte);
     }
 
     /// Helper function to return the next byte of the instruction
